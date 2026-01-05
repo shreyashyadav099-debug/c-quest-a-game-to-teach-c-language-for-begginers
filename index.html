@@ -1,0 +1,1527 @@
+!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>C Quest: Learn C by Playing</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#13ec80",
+                    "primary-dark": "#0fb863",
+                    "background-light": "#f6f8f7",
+                    "background-dark": "#102219",
+                    "surface-dark": "#1a3326",
+                },
+                fontFamily: {
+                    "display": ["Space Grotesk", "sans-serif"]
+                },
+                animation: {
+                    'float': 'float 6s ease-in-out infinite',
+                    'fadeIn': 'fadeIn 0.5s ease-out',
+                    'bounce-slow': 'bounce 2s infinite',
+                    'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                },
+                keyframes: {
+                    float: {
+                        '0%, 100%': { transform: 'translateY(0)' },
+                        '50%': { transform: 'translateY(-10px)' },
+                    },
+                    fadeIn: {
+                        '0%': { opacity: '0', transform: 'translateY(20px)' },
+                        '100%': { opacity: '1', transform: 'translateY(0)' },
+                    }
+                }
+            },
+        },
+    }
+</script>
+<style>
+    .glass-panel {
+        background: rgba(16, 34, 25, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(19, 236, 128, 0.1);
+    }
+    .text-glow {
+        text-shadow: 0 0 20px rgba(19, 236, 128, 0.3);
+    }
+    .btn-glow {
+        box-shadow: 0 0 15px rgba(19, 236, 128, 0.4);
+    }
+    .btn-glow:hover {
+        box-shadow: 0 0 25px rgba(19, 236, 128, 0.6);
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+    }
+    .modal.active {
+        display: flex;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .slide-up {
+        animation: slideUp 0.3s ease-out;
+    }
+    .code-editor {
+        font-family: 'Courier New', monospace;
+        background: #1e1e1e;
+        border-radius: 8px;
+        padding: 16px;
+        color: #d4d4d4;
+    }
+    .draggable {
+        cursor: move;
+        user-select: none;
+    }
+    .draggable:active {
+        opacity: 0.7;
+    }
+    .drop-zone {
+        min-height: 60px;
+        border: 2px dashed rgba(19, 236, 128, 0.3);
+        transition: all 0.3s;
+    }
+    .drop-zone.drag-over {
+        background: rgba(19, 236, 128, 0.1);
+        border-color: #13ec80;
+    }
+    .drop-zone.filled {
+        border-style: solid;
+        background: rgba(19, 236, 128, 0.05);
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+    .shake {
+        animation: shake 0.5s;
+    }
+    @keyframes celebrate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    .celebrate {
+        animation: celebrate 0.6s;
+    }
+    .locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .array-box {
+        width: 60px;
+        height: 60px;
+        border: 2px solid rgba(19, 236, 128, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+    .search-box {
+        transition: all 0.3s;
+    }
+    .search-box.highlight {
+        background: #13ec80 !important;
+        transform: scale(1.1);
+    }
+</style>
+</head>
+<body class="bg-background-dark text-white font-display overflow-hidden selection:bg-primary selection:text-background-dark">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+    <!-- Background Elements -->
+    <div class="absolute inset-0 z-0">
+        <div class="absolute inset-0 bg-gradient-to-br from-background-dark via-emerald-950/20 to-background-dark"></div>
+        <div class="absolute top-20 left-10 text-primary/10 text-4xl md:text-6xl font-bold select-none animate-float">{ }</div>
+        <div class="absolute bottom-40 right-10 md:right-20 text-primary/10 text-6xl md:text-8xl font-bold select-none animate-float" style="animation-delay: 2s;">;</div>
+        <div class="absolute top-1/3 right-1/4 text-primary/5 text-3xl md:text-4xl font-bold select-none animate-float" style="animation-delay: 1s;">//</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10 flex h-full flex-col">
+        <!-- Navbar -->
+        <header class="w-full px-4 py-3 md:px-6 md:py-4 lg:px-10 flex items-center justify-between">
+            <div class="flex items-center gap-2 md:gap-3">
+                <div class="flex items-center justify-center size-8 md:size-10 rounded-xl bg-primary/20 text-primary">
+                    <span class="material-symbols-outlined text-2xl md:text-3xl">terminal</span>
+                </div>
+                <div>
+                    <h2 class="text-white text-base md:text-xl font-bold leading-tight tracking-tight">C QUEST</h2>
+                    <div class="h-1 w-24 md:w-32 bg-primary/30 rounded-full mt-1 overflow-hidden">
+                        <div class="h-full bg-primary animate-pulse transition-all duration-500" id="xpBar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 md:gap-4 lg:gap-6">
+                <button id="soundBtn" class="flex size-8 md:size-10 items-center justify-center rounded-full bg-surface-dark text-gray-400 hover:text-white transition-all border border-white/5">
+                    <span class="material-symbols-outlined text-xl md:text-2xl">volume_up</span>
+                </button>
+                <div class="glass-panel rounded-full p-1 pr-3 md:pr-5 flex items-center gap-2 md:gap-3">
+                    <div class="size-7 md:size-9 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 border-2 border-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-sm md:text-base">person</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] md:text-xs text-primary font-bold uppercase tracking-wider">Level <span id="userLevel">1</span></span>
+                        <span class="text-xs md:text-sm font-bold leading-none text-white hidden sm:inline" id="userTitle">Novice Coder</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Screen -->
+        <main id="mainScreen" class="flex-1 flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-4 overflow-y-auto">
+            <div class="flex flex-col items-center text-center gap-4 md:gap-8 mb-8 md:mb-12 animate-fadeIn">
+                <div class="space-y-2">
+                    <h1 class="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-tighter text-glow select-none">
+                        C QUEST
+                    </h1>
+                    <p class="text-primary text-sm sm:text-lg md:text-2xl font-medium tracking-wide uppercase opacity-90">
+                        Learn C by Playing
+                    </p>
+                </div>
+                <div class="pt-4 md:pt-8 pb-2 md:pb-4">
+                    <button id="startBtn" class="group relative flex items-center justify-center gap-2 md:gap-4 bg-primary hover:bg-[#2af58e] text-background-dark h-14 md:h-20 px-8 md:px-12 rounded-full transition-all transform hover:scale-105 btn-glow">
+                        <span class="material-symbols-outlined text-2xl md:text-4xl group-hover:rotate-12 transition-transform">play_arrow</span>
+                        <span class="text-lg md:text-2xl font-bold tracking-tight">START GAME</span>
+                    </button>
+                </div>
+                <div class="flex flex-col sm:flex-row flex-wrap justify-center gap-3 md:gap-4 w-full max-w-lg">
+                    <button id="levelsBtn" class="flex-1 min-w-[140px] sm:min-w-[160px] h-12 md:h-14 bg-surface-dark hover:bg-surface-dark/80 border border-white/10 text-white rounded-full flex items-center justify-center gap-2 transition-all hover:-translate-y-1">
+                        <span class="material-symbols-outlined text-primary text-xl md:text-2xl">map</span>
+                        <span class="font-bold tracking-wide text-xs md:text-sm">LEVELS</span>
+                    </button>
+                    <button id="achievementsBtn" class="flex-1 min-w-[140px] sm:min-w-[160px] h-12 md:h-14 bg-surface-dark hover:bg-surface-dark/80 border border-white/10 text-white rounded-full flex items-center justify-center gap-2 transition-all hover:-translate-y-1">
+                        <span class="material-symbols-outlined text-primary text-xl md:text-2xl">emoji_events</span>
+                        <span class="font-bold tracking-wide text-xs md:text-sm">ACHIEVEMENTS</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full px-4 md:px-6 py-4 md:py-6 flex flex-col md:flex-row items-center md:items-end justify-between gap-4 md:gap-6">
+            <div class="w-full md:w-auto">
+                <div class="glass-panel p-3 md:p-4 rounded-2xl flex items-center gap-3 md:gap-4 max-w-sm">
+                    <div class="size-10 md:size-12 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg">
+                        <span class="material-symbols-outlined text-white text-xl md:text-2xl">code</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-primary/80 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-0.5">Progress</p>
+                        <p class="text-white font-bold text-sm md:text-base leading-tight"><span id="progressText">0/7 Levels</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 md:gap-6 text-xs md:text-sm font-medium text-gray-400">
+                <a id="certificateBtn" class="hover:text-primary transition-colors flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-base md:text-lg">workspace_premium</span> Certificate
+                </a>
+                <a id="aboutBtn" class="hover:text-primary transition-colors flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-base md:text-lg">info</span> About
+                </a>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- Game Modal -->
+<div id="gameModal" class="modal items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto slide-up">
+        <div class="p-4 md:p-6 lg:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-primary mb-1" id="levelTitle"></h2>
+                    <p class="text-sm text-gray-400" id="levelSubtitle"></p>
+                </div>
+                <button id="closeGame" class="size-10 rounded-full bg-surface-dark hover:bg-red-600 transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Dynamic Game Content -->
+            <div id="gameContent"></div>
+            
+            <div class="mt-6 flex gap-3">
+                <button id="checkAnswer" class="flex-1 bg-primary hover:bg-primary-dark text-background-dark font-bold py-3 px-6 rounded-full transition-all">
+                    Check Answer
+                </button>
+                <button id="hintBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded-full transition-all">
+                    💡 Hint
+                </button>
+            </div>
+            
+            <div id="feedback" class="mt-4 p-4 rounded-lg hidden"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Levels Modal -->
+<div id="levelsModal" class="modal items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto slide-up">
+        <div class="p-4 md:p-6 lg:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl md:text-3xl font-bold text-primary">Level Selection</h2>
+                <button class="closeModal size-10 rounded-full bg-surface-dark hover:bg-red-600 transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="levelsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Achievements Modal -->
+<div id="achievementsModal" class="modal items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto slide-up">
+        <div class="p-4 md:p-6 lg:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl md:text-3xl font-bold text-primary">Achievements</h2>
+                <button class="closeModal size-10 rounded-full bg-surface-dark hover:bg-red-600 transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="achievementsList" class="space-y-3 md:space-y-4"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Name Input Modal -->
+<div id="nameModal" class="modal items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full slide-up p-6 md:p-8">
+        <h2 class="text-2xl md:text-3xl font-bold text-primary mb-4">Welcome to C Quest!</h2>
+        <p class="text-gray-300 mb-6">Please enter your full name to get started:</p>
+        <input type="text" id="playerNameInput" placeholder="Enter your full name" class="w-full bg-surface-dark border border-primary/30 rounded-lg px-4 py-3 text-white mb-6 focus:outline-none focus:ring-2 focus:ring-primary" />
+        <button id="saveNameBtn" class="w-full bg-primary hover:bg-primary-dark text-background-dark font-bold py-3 px-6 rounded-full transition-all">
+            Continue
+        </button>
+    </div>
+</div>
+
+<!-- Certificate Modal -->
+<div id="certificateModal" class="modal items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full slide-up p-8 md:p-12 text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <button class="closeModal absolute top-4 right-4 size-10 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center">
+            <span class="material-symbols-outlined text-white">close</span>
+        </button>
+        <div id="certificateContent">
+            <div class="mb-6">
+                <span class="text-6xl">🏆</span>
+            </div>
+            <h2 class="text-4xl font-bold text-white mb-2">Certificate of Achievement</h2>
+            <p class="text-white/90 mb-8">This certifies that</p>
+            <h3 class="text-3xl font-bold text-white mb-8" id="certificateName">C Quest Champion</h3>
+            <p class="text-white/90 mb-4">Has successfully completed all 7 levels of C Quest</p>
+            <p class="text-white/90 mb-8">and demonstrated mastery of C programming fundamentals</p>
+        </div>
+        <div class="flex justify-center gap-4">
+            <button id="downloadCert" class="bg-white text-purple-600 font-bold py-3 px-8 rounded-full hover:bg-gray-100 transition-all">
+                Download Certificate
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Game State
+const gameState = {
+    currentLevel: 1,
+    completedLevels: [],
+    xp: 0,
+    soundOn: true,
+    achievements: [],
+    hintUsed: false,
+    playerName: ''
+};
+
+// Levels Configuration
+const levels = [
+    {
+        id: 1,
+        title: "Level 1: Hello World & Datatypes",
+        subtitle: "Learn the basics of C programming",
+        icon: "rocket_launch",
+        color: "from-green-500 to-emerald-600",
+        games: [
+            {
+                type: "drag",
+                title: "Match Datatypes",
+                instruction: "Drag the correct datatype to each variable",
+                items: [
+                    { id: 1, draggable: "int", target: "age", correct: "int" },
+                    { id: 2, draggable: "float", target: "price", correct: "float" },
+                    { id: 3, draggable: "char", target: "grade", correct: "char" }
+                ]
+            },
+            {
+                type: "sequence",
+                title: "Arrange Hello World Program",
+                instruction: "Put the lines in correct order",
+                items: [
+                    { id: 1, text: "#include <stdio.h>", order: 1 },
+                    { id: 2, text: "int main() {", order: 2 },
+                    { id: 3, text: '    printf("Hello, World!");', order: 3 },
+                    { id: 4, text: "    return 0;", order: 4 },
+                    { id: 5, text: "}", order: 5 }
+                ]
+            },
+            {
+                type: "fillblank",
+                title: "Complete the Code",
+                instruction: "Fill in the missing parts",
+                code: "#include <______>\n\nint main() {\n    ______ age = 25;\n    printf(\"Age: %d\", age);\n    return 0;\n}",
+                blanks: ["stdio.h", "int"],
+                hint: "First blank is a header file, second is a datatype for whole numbers"
+            }
+        ]
+    },
+    {
+        id: 2,
+        title: "Level 2: Loops & Conditions",
+        subtitle: "Master control flow",
+        icon: "loop",
+        color: "from-blue-500 to-cyan-600",
+        games: [
+            {
+                type: "match",
+                title: "Match Loop Types",
+                instruction: "Match each loop to its use case",
+                pairs: [
+                    { left: "for loop", right: "Known number of iterations", id: 1 },
+                    { left: "while loop", right: "Condition-based repetition", id: 2 },
+                    { left: "do-while", right: "Execute at least once", id: 3 }
+                ]
+            },
+            {
+                type: "quiz",
+                title: "Choose Correct Condition",
+                instruction: "What condition checks if x is greater than 5?",
+                question: "Select the correct condition:",
+                options: ["x > 5", "x < 5", "x == 5", "x >= 5"],
+                correct: 0
+            },
+            {
+                type: "fixcode",
+                title: "Fix the Infinite Loop",
+                instruction: "Add the missing line to fix this loop",
+                code: "int i = 0;\nwhile(i < 5) {\n    printf(\"%d \", i);\n    // Add missing line here\n}",
+                answer: "i++",
+                hint: "You need to increment the counter variable"
+            }
+        ]
+    },
+    {
+        id: 3,
+        title: "Level 3: Swapping & Reversing",
+        subtitle: "Logic building exercises",
+        icon: "swap_horiz",
+        color: "from-orange-500 to-red-600",
+        games: [
+            {
+                type: "sequence",
+                title: "Swap Two Numbers",
+                instruction: "Arrange the steps to swap a and b",
+                items: [
+                    { id: 1, text: "temp = a;", order: 1 },
+                    { id: 2, text: "a = b;", order: 2 },
+                    { id: 3, text: "b = temp;", order: 3 }
+                ]
+            },
+            {
+                type: "algorithm",
+                title: "Reverse Number Logic",
+                instruction: "Select steps to reverse a number",
+                steps: [
+                    "Extract last digit using modulo",
+                    "Multiply result by 10 and add digit",
+                    "Remove last digit using division",
+                    "Repeat until number becomes 0"
+                ],
+                correctOrder: [0, 1, 2, 3]
+            }
+        ]
+    },
+    {
+        id: 4,
+        title: "Level 4: Series Programs",
+        subtitle: "Factorial, Prime, Fibonacci",
+        icon: "functions",
+        color: "from-purple-500 to-pink-600",
+        games: [
+            {
+                type: "output",
+                title: "Guess the Output",
+                instruction: "What will factorial(5) return?",
+                question: "factorial(5) = ?",
+                options: ["120", "60", "24", "15"],
+                correct: 0,
+                hint: "5! = 5 × 4 × 3 × 2 × 1"
+            },
+            {
+                type: "quiz",
+                title: "Prime Number Check",
+                instruction: "Which number is prime?",
+                question: "Select the prime number:",
+                options: ["15", "17", "21", "25"],
+                correct: 1
+            },
+            {
+                type: "fillblank",
+                title: "Fibonacci Sequence",
+                instruction: "Complete the Fibonacci code",
+                code: "int a = 0, b = 1, next;\nfor(int i = 0; i < n; i++) {\n    printf(\"%d \", a);\n    next = ______;\n    a = b;\n    b = next;\n}",
+                blanks: ["a + b"],
+                hint: "Each number is the sum of previous two"
+            }
+        ]
+    },
+    {
+        id: 5,
+        title: "Level 5: Arrays",
+        subtitle: "Working with data collections",
+        icon: "view_array",
+        color: "from-teal-500 to-green-600",
+        games: [
+            {
+                type: "arraygame",
+                title: "Array Memory Game",
+                instruction: "Remember the array values",
+                array: [5, 12, 8, 19, 3],
+                question: "What is the value at index 2?",
+                options: ["5", "12", "8", "19"],
+                correct: 2
+            },
+            {
+                type: "findmax",
+                title: "Find Maximum",
+                instruction: "Click the largest number",
+                numbers: [23, 67, 45, 89, 34, 12],
+                correct: 3
+            },
+            {
+                type: "quiz",
+                title: "Array Indexing",
+                instruction: "Array indexing starts from?",
+                question: "In C, array index starts from:",
+                options: ["0", "1", "-1", "Depends on declaration"],
+                correct: 0
+            }
+        ]
+    },
+    {
+        id: 6,
+        title: "Level 6: Searching",
+        subtitle: "Linear & Binary Search",
+        icon: "search",
+        color: "from-indigo-500 to-blue-600",
+        games: [
+            {
+                type: "searchgame",
+                title: "Linear Search Animation",
+                instruction: "Watch how linear search works, then answer",
+                array: [10, 25, 30, 45, 60],
+                target: 30,
+                question: "How many comparisons were made?",
+                correct: 3
+            },
+            {
+                type: "quiz",
+                title: "Choose Algorithm",
+                instruction: "Which search needs sorted array?",
+                question: "Which algorithm requires sorted data?",
+                options: ["Linear Search", "Binary Search", "Both", "Neither"],
+                correct: 1
+            },
+            {
+                type: "findnumber",
+                title: "Find the Number",
+                instruction: "Find 45 using binary search steps",
+                array: [10, 20, 30, 40, 50, 60, 70],
+                target: 45,
+                hint: "Start from middle, compare, and eliminate half"
+            }
+        ]
+    },
+    {
+        id: 7,
+        title: "Level 7: Sorting",
+        subtitle: "Bubble, Selection, Insertion Sort",
+        icon: "sort",
+        color: "from-red-500 to-orange-600",
+        games: [
+            {
+                type: "sortdrag",
+                title: "Bubble Sort Practice",
+                instruction: "Drag numbers to sort them (smallest to largest)",
+                numbers: [64, 34, 25, 12, 22]
+            },
+            {
+                type: "sequence",
+                title: "Selection Sort Steps",
+                instruction: "Arrange the steps of selection sort",
+                items: [
+                    { id: 1, text: "Find minimum element", order: 1 },
+                    { id: 2, text: "Swap with first position", order: 2 },
+                    { id: 3, text: "Move to next position", order: 3 },
+                    { id: 4, text: "Repeat for remaining", order: 4 }
+                ]
+            },
+            {
+                type: "quiz",
+                title: "Sorting Knowledge",
+                instruction: "Test your sorting knowledge",
+                question: "Which sort is most efficient for small arrays?",
+                options: ["Bubble Sort", "Insertion Sort", "Selection Sort", "All same"],
+                correct: 1
+            }
+        ]
+    }
+];
+
+// Achievements
+const achievements = [
+    { id: 1, name: "First Steps", description: "Complete Level 1", icon: "flag", unlocked: false },
+    { id: 2, name: "Loop Master", description: "Complete Level 2", icon: "loop", unlocked: false },
+    { id: 3, name: "Logic Builder", description: "Complete Level 3", icon: "psychology", unlocked: false },
+    { id: 4, name: "Series Pro", description: "Complete Level 4", icon: "functions", unlocked: false },
+    { id: 5, name: "Array Expert", description: "Complete Level 5", icon: "view_array", unlocked: false },
+    { id: 6, name: "Search Ninja", description: "Complete Level 6", icon: "search", unlocked: false },
+    { id: 7, name: "Sort Champion", description: "Complete all levels!", icon: "emoji_events", unlocked: false },
+    { id: 8, name: "Perfect Score", description: "Complete any level without hints", icon: "star", unlocked: false },
+    { id: 9, name: "Speed Runner", description: "Complete 3 levels in one session", icon: "speed", unlocked: false }
+];
+
+// Initialize
+let currentGame = null;
+let currentGameIndex = 0;
+
+// Event Listeners
+document.getElementById('startBtn').addEventListener('click', () => {
+    const nextLevel = gameState.completedLevels.length + 1;
+    if (nextLevel <= 7) {
+        startLevel(nextLevel);
+    } else {
+        startLevel(1);
+    }
+});
+
+document.getElementById('levelsBtn').addEventListener('click', showLevels);
+document.getElementById('achievementsBtn').addEventListener('click', showAchievements);
+document.getElementById('certificateBtn').addEventListener('click', showCertificate);
+document.getElementById('aboutBtn').addEventListener('click', () => {
+    alert('C Quest: Learn C Programming through interactive games!\n\nComplete all 7 levels to master C programming fundamentals.');
+});
+document.getElementById('soundBtn').addEventListener('click', toggleSound);
+document.getElementById('closeGame').addEventListener('click', () => {
+    document.getElementById('gameModal').classList.remove('active');
+});
+document.getElementById('checkAnswer').addEventListener('click', checkAnswer);
+document.getElementById('hintBtn').addEventListener('click', showHint);
+
+document.querySelectorAll('.closeModal').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.target.closest('.modal').classList.remove('active');
+    });
+});
+
+// Main Functions
+function startLevel(levelId) {
+    const level = levels.find(l => l.id === levelId);
+    if (!level) return;
+    
+    gameState.currentLevel = levelId;
+    gameState.hintUsed = false;
+    currentGameIndex = 0;
+    
+    document.getElementById('levelTitle').textContent = level.title;
+    document.getElementById('levelSubtitle').textContent = level.subtitle;
+    
+    loadGame(level.games[0]);
+    document.getElementById('gameModal').classList.add('active');
+}
+
+function loadGame(game) {
+    currentGame = game;
+    const content = document.getElementById('gameContent');
+    document.getElementById('feedback').classList.add('hidden');
+    
+    let html = `<div class="mb-6">
+        <h3 class="text-xl font-bold text-white mb-2">${game.title}</h3>
+        <p class="text-gray-300">${game.instruction}</p>
+    </div>`;
+    
+    switch(game.type) {
+        case 'drag':
+            html += renderDragGame(game);
+            break;
+        case 'sequence':
+            html += renderSequenceGame(game);
+            break;
+        case 'fillblank':
+            html += renderFillBlankGame(game);
+            break;
+        case 'match':
+            html += renderMatchGame(game);
+            break;
+        case 'quiz':
+            html += renderQuizGame(game);
+            break;
+        case 'fixcode':
+            html += renderFixCodeGame(game);
+            break;
+        case 'algorithm':
+            html += renderAlgorithmGame(game);
+            break;
+        case 'output':
+            html += renderOutputGame(game);
+            break;
+        case 'arraygame':
+            html += renderArrayGame(game);
+            break;
+        case 'findmax':
+            html += renderFindMaxGame(game);
+            break;
+        case 'searchgame':
+            html += renderSearchGame(game);
+            break;
+        case 'findnumber':
+            html += renderFindNumberGame(game);
+            break;
+        case 'sortdrag':
+            html += renderSortDragGame(game);
+            break;
+    }
+    
+    content.innerHTML = html;
+    initializeGameInteractions();
+}
+
+function renderDragGame(game) {
+    const draggables = game.items.map(item => 
+        `<div class="draggable bg-primary text-background-dark font-bold px-6 py-3 rounded-lg cursor-move" draggable="true" data-value="${item.draggable}">${item.draggable}</div>`
+    ).join('');
+    
+    const targets = game.items.map(item =>
+        `<div class="mb-4">
+            <div class="text-sm text-gray-400 mb-2">${item.target}</div>
+            <div class="drop-zone rounded-lg p-4" data-target="${item.target}" data-correct="${item.correct}"></div>
+        </div>`
+    ).join('');
+    
+    return `
+        <div class="grid md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-sm font-bold text-primary mb-3">DRAG FROM HERE:</h4>
+                <div class="space-y-3">${draggables}</div>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-primary mb-3">DROP HERE:</h4>
+                ${targets}
+            </div>
+        </div>`;
+}
+
+function renderSequenceGame(game) {
+    const shuffled = [...game.items].sort(() => Math.random() - 0.5);
+    const items = shuffled.map(item =>
+        `<div class="draggable glass-panel p-4 rounded-lg cursor-move font-mono text-sm" draggable="true" data-order="${item.order}">${item.text}</div>`
+    ).join('');
+    
+    return `
+        <div class="space-y-3 mb-4">${items}</div>
+        <div class="drop-zone border-2 border-dashed border-primary/30 rounded-lg p-4 min-h-[200px]" id="sequenceTarget">
+            <p class="text-gray-400 text-center">Drop items here in correct order</p>
+        </div>`;
+}
+
+function renderFillBlankGame(game) {
+    return `
+        <div class="code-editor mb-4">
+            <pre class="whitespace-pre-wrap" id="codeDisplay">${game.code}</pre>
+        </div>
+        <div class="space-y-3">
+            ${game.blanks.map((b, i) => 
+                `<input type="text" placeholder="Fill blank ${i + 1}" class="w-full bg-surface-dark border border-primary/30 rounded-lg px-4 py-3 text-white" data-blank="${i}" />`
+            ).join('')}
+        </div>`;
+}
+
+function renderQuizGame(game) {
+    return `
+        <div class="mb-4 p-4 glass-panel rounded-lg">
+            <p class="text-lg font-semibold text-white">${game.question}</p>
+        </div>
+        <div class="space-y-3">
+            ${game.options.map((opt, i) =>
+                `<button class="quiz-option w-full text-left p-4 glass-panel rounded-lg hover:bg-surface-dark transition-all" data-index="${i}">
+                    <span class="font-bold text-primary mr-3">${String.fromCharCode(65 + i)}.</span>
+                    ${opt}
+                </button>`
+            ).join('')}
+        </div>`;
+}
+
+function renderMatchGame(game) {
+    const left = game.pairs.map(p => 
+        `<div class="match-item glass-panel p-4 rounded-lg cursor-pointer hover:bg-primary/20 transition-all" data-id="${p.id}" data-side="left">${p.left}</div>`
+    ).join('');
+    
+    const rightShuffled = [...game.pairs].sort(() => Math.random() - 0.5);
+    const right = rightShuffled.map(p =>
+        `<div class="match-item glass-panel p-4 rounded-lg cursor-pointer hover:bg-primary/20 transition-all" data-id="${p.id}" data-side="right">${p.right}</div>`
+    ).join('');
+    
+    return `
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="space-y-3">${left}</div>
+            <div class="space-y-3">${right}</div>
+        </div>`;
+}
+
+function renderFixCodeGame(game) {
+    return `
+        <div class="code-editor mb-4">
+            <pre class="whitespace-pre-wrap">${game.code}</pre>
+        </div>
+        <input type="text" placeholder="Type the missing line" class="w-full bg-surface-dark border border-primary/30 rounded-lg px-4 py-3 text-white" id="fixCodeInput" />`;
+}
+
+function renderAlgorithmGame(game) {
+    const shuffled = [...game.steps].map((step, i) => ({ step, index: i })).sort(() => Math.random() - 0.5);
+    const items = shuffled.map((item, i) =>
+        `<div class="draggable glass-panel p-4 rounded-lg cursor-move font-mono text-sm" draggable="true" data-step="${item.index}">${item.step}</div>`
+    ).join('');
+    
+    return `
+        <div class="space-y-3 mb-4">${items}</div>
+        <div class="drop-zone border-2 border-dashed border-primary/30 rounded-lg p-4 min-h-[200px]" id="algorithmTarget">
+            <p class="text-gray-400 text-center">Drop steps here in correct order</p>
+        </div>`;
+}
+
+function renderOutputGame(game) {
+    return renderQuizGame(game);
+}
+
+function renderArrayGame(game) {
+    const arrayDisplay = game.array.map((val, i) =>
+        `<div class="array-box bg-surface-dark rounded-lg">
+            <div class="text-xs text-gray-400">[${i}]</div>
+            <div>${val}</div>
+        </div>`
+    ).join('');
+    
+    return `
+        <div class="flex justify-center gap-2 mb-6">${arrayDisplay}</div>
+        <div class="mb-4 p-4 glass-panel rounded-lg">
+            <p class="text-lg font-semibold text-white">${game.question}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            ${game.options.map((opt, i) =>
+                `<button class="quiz-option p-4 glass-panel rounded-lg hover:bg-surface-dark transition-all" data-index="${i}">${opt}</button>`
+            ).join('')}
+        </div>`;
+}
+
+function renderFindMaxGame(game) {
+    const numbers = game.numbers.map((num, i) =>
+        `<button class="number-btn p-6 glass-panel rounded-lg text-2xl font-bold hover:bg-primary/20 transition-all" data-index="${i}">${num}</button>`
+    ).join('');
+    
+    return `<div class="grid grid-cols-3 gap-4">${numbers}</div>`;
+}
+
+function renderSearchGame(game) {
+    const arrayDisplay = game.array.map((val, i) =>
+        `<div class="search-box array-box bg-surface-dark rounded-lg" data-index="${i}">${val}</div>`
+    ).join('');
+    
+    return `
+        <div class="flex justify-center gap-2 mb-6" id="searchArray">${arrayDisplay}</div>
+        <button id="animateSearch" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mb-4">Animate Search</button>
+        <div class="mb-4 p-4 glass-panel rounded-lg">
+            <p class="text-lg font-semibold text-white">${game.question}</p>
+        </div>
+        <input type="number" placeholder="Your answer" class="w-full bg-surface-dark border border-primary/30 rounded-lg px-4 py-3 text-white" id="searchAnswer" />`;
+}
+
+function renderFindNumberGame(game) {
+    const arrayDisplay = game.array.map((val, i) =>
+        `<div class="search-box array-box bg-surface-dark rounded-lg" data-index="${i}">${val}</div>`
+    ).join('');
+    
+    return `
+        <div class="flex justify-center gap-2 mb-6" id="searchArray">${arrayDisplay}</div>
+        <div class="mb-4 p-4 glass-panel rounded-lg">
+            <p class="text-lg font-semibold text-white">Find ${game.target} using binary search. How many comparisons?</p>
+        </div>
+        <input type="number" placeholder="Your answer" class="w-full bg-surface-dark border border-primary/30 rounded-lg px-4 py-3 text-white" id="searchAnswer" />`;
+}
+
+function renderSortDragGame(game) {
+    const numbers = game.numbers.map(num =>
+        `<div class="draggable sort-number bg-primary text-background-dark font-bold text-2xl p-6 rounded-lg cursor-move" draggable="true" data-value="${num}">${num}</div>`
+    ).join('');
+    
+    return `
+        <div class="flex flex-wrap gap-3 justify-center mb-6">${numbers}</div>
+        <div class="drop-zone border-2 border-dashed border-primary/30 rounded-lg p-4 min-h-[120px] flex flex-wrap gap-3 justify-center" id="sortTarget">
+            <p class="text-gray-400 w-full text-center">Drag numbers here in sorted order</p>
+        </div>`;
+}
+
+function initializeGameInteractions() {
+    // Drag and drop
+    const draggables = document.querySelectorAll('.draggable');
+    const dropZones = document.querySelectorAll('.drop-zone');
+    
+    draggables.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+            if (e.target.draggable === 'false' || e.target.style.opacity === '0.3') {
+                e.preventDefault();
+                return;
+            }
+            e.dataTransfer.setData('text/plain', e.target.dataset.value || e.target.dataset.order || e.target.dataset.step);
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.style.opacity = '0.5';
+        });
+        
+        item.addEventListener('dragend', (e) => {
+            if (e.target.draggable !== 'false' && e.target.style.opacity !== '0.3') {
+                e.target.style.opacity = '1';
+            }
+        });
+    });
+    
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.classList.add('drag-over');
+        });
+        
+        zone.addEventListener('dragleave', () => {
+            zone.classList.remove('drag-over');
+        });
+        
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const data = e.dataTransfer.getData('text/plain');
+            
+            if (zone.id === 'sequenceTarget' || zone.id === 'algorithmTarget' || zone.id === 'sortTarget') {
+                const item = document.querySelector(`.draggable[data-order="${data}"], .draggable[data-step="${data}"], .draggable[data-value="${data}"]`);
+                if (item && item.draggable !== 'false' && item.style.opacity !== '0.3') {
+                    const existing = zone.querySelectorAll(`[data-order="${data}"], [data-step="${data}"], [data-value="${data}"]`);
+                    if (existing.length === 0) {
+                        const clone = item.cloneNode(true);
+                        clone.draggable = false;
+                        clone.classList.remove('draggable');
+                        clone.style.cursor = 'default';
+                        if (zone.querySelector('p.text-gray-400')) {
+                            zone.innerHTML = '';
+                        }
+                        zone.appendChild(clone);
+                        item.style.opacity = '0.3';
+                        item.draggable = false;
+                        item.style.cursor = 'not-allowed';
+                    }
+                }
+            } else {
+                if (!zone.classList.contains('filled')) {
+                    zone.textContent = data;
+                    zone.classList.add('filled');
+                }
+            }
+        });
+    });
+    
+    // Quiz buttons
+    document.querySelectorAll('.quiz-option').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('ring-2', 'ring-primary'));
+            btn.classList.add('ring-2', 'ring-primary');
+        });
+    });
+    
+    // Match game
+    let matchSelected = null;
+    document.querySelectorAll('.match-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (!matchSelected) {
+                matchSelected = item;
+                item.classList.add('ring-2', 'ring-primary');
+            } else {
+                if (matchSelected.dataset.id === item.dataset.id && matchSelected.dataset.side !== item.dataset.side) {
+                    matchSelected.classList.add('bg-green-600');
+                    item.classList.add('bg-green-600');
+                    matchSelected.classList.remove('ring-2', 'ring-primary');
+                    matchSelected = null;
+                } else {
+                    matchSelected.classList.remove('ring-2', 'ring-primary');
+                    matchSelected = null;
+                }
+            }
+        });
+    });
+    
+    // Number buttons
+    document.querySelectorAll('.number-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.number-btn').forEach(b => b.classList.remove('ring-2', 'ring-primary'));
+            btn.classList.add('ring-2', 'ring-primary');
+        });
+    });
+    
+    // Search animation
+    const animateBtn = document.getElementById('animateSearch');
+    if (animateBtn) {
+        animateBtn.addEventListener('click', animateSearch);
+    }
+}
+
+function animateSearch() {
+    const boxes = document.querySelectorAll('.search-box');
+    let count = 0;
+    
+    boxes.forEach((box, i) => {
+        setTimeout(() => {
+            box.classList.add('highlight');
+            count++;
+            setTimeout(() => box.classList.remove('highlight'), 500);
+            
+            if (parseInt(box.textContent) === currentGame.target) {
+                setTimeout(() => {
+                    box.classList.add('bg-green-600');
+                }, 600);
+            }
+        }, i * 700);
+    });
+}
+
+function checkAnswer() {
+    const feedback = document.getElementById('feedback');
+    let isCorrect = false;
+    
+    switch(currentGame.type) {
+        case 'drag':
+            isCorrect = checkDragAnswer();
+            break;
+        case 'sequence':
+            isCorrect = checkSequenceAnswer();
+            break;
+        case 'fillblank':
+            isCorrect = checkFillBlankAnswer();
+            break;
+        case 'quiz':
+        case 'output':
+        case 'arraygame':
+            isCorrect = checkQuizAnswer();
+            break;
+        case 'match':
+            isCorrect = checkMatchAnswer();
+            break;
+        case 'fixcode':
+            isCorrect = checkFixCodeAnswer();
+            break;
+        case 'findmax':
+            isCorrect = checkFindMaxAnswer();
+            break;
+        case 'algorithm':
+            isCorrect = checkAlgorithmAnswer();
+            break;
+        case 'searchgame':
+        case 'findnumber':
+            isCorrect = checkSearchAnswer();
+            break;
+        case 'sortdrag':
+            isCorrect = checkSortAnswer();
+            break;
+    }
+    
+    feedback.classList.remove('hidden');
+    
+    if (isCorrect) {
+        feedback.className = 'mt-4 p-4 rounded-lg bg-green-600/20 border border-green-600';
+        feedback.innerHTML = '<p class="text-green-400 font-bold">✅ Correct! Well done!</p>';
+        playSound('success');
+        
+        setTimeout(() => {
+            const level = levels.find(l => l.id === gameState.currentLevel);
+            currentGameIndex++;
+            
+            if (currentGameIndex < level.games.length) {
+                loadGame(level.games[currentGameIndex]);
+            } else {
+                completeLevel();
+            }
+        }, 1500);
+    } else {
+        feedback.className = 'mt-4 p-4 rounded-lg bg-red-600/20 border border-red-600 shake';
+        feedback.innerHTML = '<p class="text-red-400 font-bold">❌ Not quite right. Try again!</p>';
+        playSound('error');
+        setTimeout(() => feedback.classList.remove('shake'), 500);
+    }
+}
+
+function checkDragAnswer() {
+    const zones = document.querySelectorAll('.drop-zone');
+    return Array.from(zones).every(zone => 
+        zone.textContent.trim() === zone.dataset.correct
+    );
+}
+
+function checkSequenceAnswer() {
+    const target = document.getElementById('sequenceTarget');
+    if (!target) return false;
+    const items = Array.from(target.querySelectorAll('[data-order]'));
+    if (items.length !== currentGame.items.length) return false;
+    for (let i = 0; i < items.length; i++) {
+        if (parseInt(items[i].dataset.order) !== i + 1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function checkAlgorithmAnswer() {
+    const target = document.getElementById('algorithmTarget');
+    if (!target) return false;
+    const items = Array.from(target.querySelectorAll('[data-step]'));
+    if (items.length !== currentGame.steps.length) return false;
+    const order = items.map(item => parseInt(item.dataset.step));
+    return JSON.stringify(order) === JSON.stringify(currentGame.correctOrder);
+}
+
+function checkFillBlankAnswer() {
+    const inputs = document.querySelectorAll('[data-blank]');
+    return Array.from(inputs).every((input, i) => 
+        input.value.trim().toLowerCase() === currentGame.blanks[i].toLowerCase()
+    );
+}
+
+function checkQuizAnswer() {
+    const selected = document.querySelector('.quiz-option.ring-2');
+    return selected && parseInt(selected.dataset.index) === currentGame.correct;
+}
+
+function checkMatchAnswer() {
+    const matched = document.querySelectorAll('.match-item.bg-green-600');
+    return matched.length === currentGame.pairs.length * 2;
+}
+
+function checkFixCodeAnswer() {
+    const input = document.getElementById('fixCodeInput');
+    return input && input.value.trim().toLowerCase().includes(currentGame.answer.toLowerCase());
+}
+
+function checkFindMaxAnswer() {
+    const selected = document.querySelector('.number-btn.ring-2');
+    return selected && parseInt(selected.dataset.index) === currentGame.correct;
+}
+
+function checkSearchAnswer() {
+    if (currentGame.type === 'findnumber') {
+        const input = document.getElementById('searchAnswer');
+        if (!input || !input.value) return false;
+        const answer = parseInt(input.value);
+        const sortedArray = [...currentGame.array].sort((a, b) => a - b);
+        let left = 0, right = sortedArray.length - 1, comparisons = 0;
+        while (left <= right) {
+            comparisons++;
+            const mid = Math.floor((left + right) / 2);
+            if (sortedArray[mid] === currentGame.target) {
+                return answer === comparisons;
+            } else if (sortedArray[mid] < currentGame.target) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return answer === comparisons;
+    } else {
+        const input = document.getElementById('searchAnswer');
+        return input && parseInt(input.value) === currentGame.correct;
+    }
+}
+
+function checkSortAnswer() {
+    const target = document.getElementById('sortTarget');
+    if (!target) return false;
+    const items = Array.from(target.querySelectorAll('[data-value]'));
+    if (items.length !== currentGame.numbers.length) return false;
+    const values = items.map(item => parseInt(item.dataset.value));
+    const sorted = [...values].sort((a, b) => a - b);
+    return JSON.stringify(values) === JSON.stringify(sorted);
+}
+
+function completeLevel() {
+    const levelId = gameState.currentLevel;
+    
+    if (!gameState.completedLevels.includes(levelId)) {
+        gameState.completedLevels.push(levelId);
+        gameState.xp += 100;
+        unlockAchievement(levelId);
+        
+        if (!gameState.hintUsed) {
+            unlockAchievement(8);
+        }
+        
+        if (gameState.completedLevels.length === 7) {
+            unlockAchievement(7);
+            setTimeout(() => showCertificate(), 2000);
+        }
+        
+        saveProgress();
+        updateProgress();
+        celebrate();
+        
+        const feedback = document.getElementById('feedback');
+        feedback.className = 'mt-4 p-6 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 border-2 border-green-400 celebrate';
+        feedback.innerHTML = `
+            <p class="text-white font-bold text-xl mb-2">🎉 Level ${levelId} Complete!</p>
+            <p class="text-white/90">You earned 100 XP!</p>
+            ${gameState.completedLevels.length < 7 ? '<button onclick="document.getElementById(\'gameModal\').classList.remove(\'active\')" class="mt-4 bg-white text-green-600 font-bold py-2 px-6 rounded-full">Continue</button>' : ''}
+        `;
+    }
+}
+
+function celebrate() {
+    if (typeof confetti !== 'undefined') {
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+    playSound('complete');
+}
+
+function showHint() {
+    gameState.hintUsed = true;
+    const hint = currentGame.hint || "Try breaking down the problem into smaller steps!";
+    alert('💡 Hint: ' + hint);
+}
+
+function showLevels() {
+    const list = document.getElementById('levelsList');
+    list.innerHTML = levels.map(level => {
+        const completed = gameState.completedLevels.includes(level.id);
+        const unlocked = level.id === 1 || gameState.completedLevels.includes(level.id - 1);
+        
+        return `
+            <div class="glass-panel p-6 rounded-xl ${unlocked ? 'cursor-pointer hover:scale-105' : 'locked'} transition-all" ${unlocked ? `onclick="document.getElementById('levelsModal').classList.remove('active'); startLevel(${level.id});"` : ''}>
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="size-12 rounded-xl bg-gradient-to-br ${level.color} flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-2xl">${level.icon}</span>
+                    </div>
+                    <div class="text-3xl">${completed ? '✅' : unlocked ? '🔓' : '🔒'}</div>
+                </div>
+                <h3 class="font-bold text-white mb-1">${level.title.split(':')[0]}</h3>
+                <p class="text-xs text-gray-400">${level.subtitle}</p>
+            </div>`;
+    }).join('');
+    
+    document.getElementById('levelsModal').classList.add('active');
+}
+
+function showAchievements() {
+    const list = document.getElementById('achievementsList');
+    list.innerHTML = achievements.map(a => {
+        const unlocked = gameState.achievements.includes(a.id);
+        return `
+            <div class="glass-panel p-4 rounded-xl flex items-center gap-4 ${unlocked ? 'border-primary' : 'opacity-60'}">
+                <div class="size-14 rounded-xl bg-gradient-to-br ${unlocked ? 'from-yellow-500 to-orange-600' : 'from-gray-600 to-gray-700'} flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-2xl">${a.icon}</span>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-white">${a.name}</h3>
+                    <p class="text-sm text-gray-400">${a.description}</p>
+                </div>
+                ${unlocked ? '<span class="text-3xl">🏆</span>' : ''}
+            </div>`;
+    }).join('');
+    
+    document.getElementById('achievementsModal').classList.add('active');
+}
+
+function showCertificate() {
+    if (gameState.completedLevels.length === 7) {
+        const nameDisplay = gameState.playerName || 'C Quest Champion';
+        document.getElementById('certificateName').textContent = nameDisplay;
+        document.getElementById('certificateModal').classList.add('active');
+    } else {
+        alert('Complete all 7 levels to earn your certificate!');
+    }
+}
+
+document.getElementById('downloadCert').addEventListener('click', () => {
+    const studentName = document.getElementById('certificateName').textContent;
+    const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const certId = 'CQ-' + Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Date.now().toString().slice(-6);
+    
+    const printContainer = document.createElement('div');
+    printContainer.id = 'pdfExportContainer';
+    printContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 1123px; height: 794px; background: #faf9f6; padding: 0; margin: 0; z-index: 999999; visibility: visible; opacity: 1; overflow: hidden; display: block; font-family: "Times New Roman", "Georgia", serif;';
+    
+    printContainer.innerHTML = `
+        <div style="width: 100%; height: 100%; position: relative; background: #faf9f6; border: 8px solid #d4af37; box-sizing: border-box; padding: 40px 60px;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSI4MCIgZmlsbD0iI2U4ZTRkNSIgb3BhY2l0eT0iMC4xIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSIgZm9udC1mYW1pbHk9InNlcmlmIj5DIFF1ZXN0PC90ZXh0Pjwvc3ZnPg=='); background-repeat: repeat; opacity: 0.05; pointer-events: none;"></div>
+            
+            <div style="text-align: center; position: relative; z-index: 1;">
+                <div style="margin-bottom: 20px;">
+                    <div style="width: 120px; height: 120px; margin: 0 auto; border: 4px solid #d4af37; border-radius: 50%; background: #faf9f6; display: flex; align-items: center; justify-content: center; font-size: 60px;">🏆</div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="font-size: 14px; color: #666; letter-spacing: 3px; font-weight: normal; margin-bottom: 5px;">CERTIFICATE OF COMPLETION</div>
+                </div>
+                
+                <h1 style="font-size: 32px; font-weight: bold; color: #1a1a1a; margin: 20px 0; line-height: 1.2; font-family: 'Times New Roman', serif;">C Quest – Certificate of Completion in C Programming</h1>
+                
+                <div style="margin: 40px 0 30px 0; font-size: 18px; color: #333; line-height: 1.8;">
+                    <p style="margin: 0 0 15px 0;">This is to certify that</p>
+                    <div style="margin: 25px 0; padding: 20px 0; border-top: 2px solid #d4af37; border-bottom: 2px solid #d4af37;">
+                        <h2 style="font-size: 36px; font-weight: bold; color: #1a1a1a; margin: 0; font-family: 'Times New Roman', serif; text-transform: uppercase; letter-spacing: 2px;">${studentName}</h2>
+                    </div>
+                    <p style="margin: 15px 0 0 0;">has successfully completed all 7 levels of C Quest</p>
+                    <p style="margin: 5px 0 0 0;">and demonstrated mastery of C programming fundamentals</p>
+                </div>
+                
+                <div style="margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 40px;">
+                    <div style="flex: 1; text-align: left;">
+                        <div style="border-top: 2px solid #1a1a1a; width: 200px; margin-top: 60px; padding-top: 5px;">
+                            <div style="font-size: 14px; color: #333; font-weight: bold;">Instructor Signature</div>
+                        </div>
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <div style="margin-bottom: 10px;">
+                            <div style="width: 80px; height: 80px; margin: 0 auto; border: 3px solid #d4af37; border-radius: 50%; background: #faf9f6; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #d4af37;">✓</div>
+                        </div>
+                        <div style="font-size: 12px; color: #666; font-weight: bold;">OFFICIAL SEAL</div>
+                    </div>
+                    <div style="flex: 1; text-align: right;">
+                        <div style="border-top: 2px solid #1a1a1a; width: 200px; margin-left: auto; margin-top: 60px; padding-top: 5px;">
+                            <div style="font-size: 14px; color: #333; font-weight: bold;">Date: ${issueDate}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; font-size: 11px; color: #999; letter-spacing: 1px;">
+                    Certificate ID: ${certId}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(printContainer);
+    
+    const captureElement = () => {
+        const opt = {
+            margin: [0, 0],
+            filename: 'C-Quest-Certificate.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#faf9f6',
+                logging: false,
+                width: 1123,
+                height: 794,
+                windowWidth: 1123,
+                windowHeight: 794,
+                x: 0,
+                y: 0,
+                scrollX: 0,
+                scrollY: 0
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        
+        html2pdf().set(opt).from(printContainer).save().then(() => {
+            if (document.body.contains(printContainer)) {
+                document.body.removeChild(printContainer);
+            }
+        }).catch((err) => {
+            console.error('PDF generation error:', err);
+            if (document.body.contains(printContainer)) {
+                document.body.removeChild(printContainer);
+            }
+        });
+    };
+    
+    setTimeout(captureElement, 300);
+});
+
+function unlockAchievement(id) {
+    if (!gameState.achievements.includes(id)) {
+        gameState.achievements.push(id);
+        const achievement = achievements.find(a => a.id === id);
+        if (achievement) {
+            showNotification('🏆 Achievement Unlocked: ' + achievement.name);
+        }
+    }
+}
+
+function updateProgress() {
+    const xpBar = document.getElementById('xpBar');
+    const level = Math.floor(gameState.xp / 100) + 1;
+    const xpInLevel = gameState.xp % 100;
+    
+    xpBar.style.width = xpInLevel + '%';
+    document.getElementById('userLevel').textContent = level;
+    
+    const titles = ['Novice Coder', 'Code Apprentice', 'C Developer', 'C Expert', 'C Master', 'C Legend'];
+    document.getElementById('userTitle').textContent = titles[Math.min(level - 1, titles.length - 1)];
+    
+    document.getElementById('progressText').textContent = `${gameState.completedLevels.length}/7 Levels`;
+}
+
+function toggleSound() {
+    gameState.soundOn = !gameState.soundOn;
+    const icon = document.getElementById('soundBtn').querySelector('.material-symbols-outlined');
+    icon.textContent = gameState.soundOn ? 'volume_up' : 'volume_off';
+}
+
+let audioContextInstance = null;
+
+function playSound(type) {
+    if (!gameState.soundOn) return;
+    
+    try {
+        if (!audioContextInstance) {
+            audioContextInstance = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        if (audioContextInstance.state === 'suspended') {
+            audioContextInstance.resume();
+        }
+        
+        const oscillator = audioContextInstance.createOscillator();
+        const gainNode = audioContextInstance.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContextInstance.destination);
+        
+        if (type === 'success') {
+            oscillator.frequency.value = 523.25;
+            gainNode.gain.setValueAtTime(0.3, audioContextInstance.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextInstance.currentTime + 0.3);
+        } else if (type === 'error') {
+            oscillator.frequency.value = 200;
+            gainNode.gain.setValueAtTime(0.2, audioContextInstance.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextInstance.currentTime + 0.2);
+        } else if (type === 'complete') {
+            oscillator.frequency.value = 659.25;
+            gainNode.gain.setValueAtTime(0.3, audioContextInstance.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextInstance.currentTime + 0.5);
+        }
+        
+        oscillator.start(audioContextInstance.currentTime);
+        oscillator.stop(audioContextInstance.currentTime + 0.5);
+        
+        oscillator.onended = () => {
+            oscillator.disconnect();
+            gainNode.disconnect();
+        };
+    } catch (e) {
+        console.error('Audio error:', e);
+    }
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-20 right-4 glass-panel p-4 rounded-xl text-white font-bold z-50 animate-fadeIn shadow-lg';
+    notification.innerHTML = `<p>${message}</p>`;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        notification.style.transition = 'all 0.3s';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Load saved progress
+const savedState = localStorage.getItem('cQuestState');
+if (savedState) {
+    try {
+        const loaded = JSON.parse(savedState);
+        gameState.completedLevels = loaded.completedLevels || [];
+        gameState.xp = loaded.xp || 0;
+        gameState.achievements = loaded.achievements || [];
+        gameState.playerName = loaded.playerName || '';
+    } catch (e) {
+        console.error('Failed to load saved state');
+    }
+}
+
+const savedName = localStorage.getItem('cQuestPlayerName');
+if (savedName) {
+    gameState.playerName = savedName;
+}
+
+// Name input handlers
+document.getElementById('saveNameBtn').addEventListener('click', () => {
+    const nameInput = document.getElementById('playerNameInput');
+    const name = nameInput.value.trim();
+    if (name) {
+        gameState.playerName = name;
+        localStorage.setItem('cQuestPlayerName', name);
+        saveProgress();
+        document.getElementById('nameModal').classList.remove('active');
+    } else {
+        alert('Please enter your name');
+    }
+});
+
+document.getElementById('playerNameInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        document.getElementById('saveNameBtn').click();
+    }
+});
+
+// Show name modal if name not set
+if (!gameState.playerName) {
+    document.getElementById('nameModal').classList.add('active');
+}
+
+function saveProgress() {
+    try {
+        localStorage.setItem('cQuestState', JSON.stringify({
+            completedLevels: gameState.completedLevels,
+            xp: gameState.xp,
+            achievements: gameState.achievements,
+            playerName: gameState.playerName
+        }));
+    } catch (e) {
+        console.error('Failed to save progress:', e);
+    }
+}
+
+// Save progress on unload
+window.addEventListener('beforeunload', saveProgress);
+
+// Auto-save periodically
+setInterval(saveProgress, 30000);
+
+// Initialize
+updateProgress();
+</script>
+</body>
+</html>
